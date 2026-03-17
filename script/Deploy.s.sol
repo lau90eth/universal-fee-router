@@ -24,11 +24,12 @@ import "../src/UniversalFeeRouterFactory.sol";
 contract Deploy is Script {
 
     // ── Canonical recipient placeholders ─────────────────────────────────────
-    // Replace with real addresses before mainnet deploy
+    // These are placeholder addresses for canonical router deployment.
+    // In production: replace with your actual treasury/frontend/protocol addresses.
 
-    address constant TREASURY   = 0x000000000000000000000000000000000000dEaD;
+    address constant TREASURY   = 0x1e64096D2F12f6d343E84D780104d928441B3228;
     address constant FRONTEND   = 0x000000000000000000000000000000000000dEaD;
-    address constant PROTOCOL   = 0x000000000000000000000000000000000000dEaD;
+    address constant PROTOCOL   = 0x000000000000000000000000000000000000bEEF;
 
     function run() external {
         uint256 deployerKey = vm.envUint("PRIVATE_KEY");

@@ -80,8 +80,8 @@ This transforms fee configs into **addressable onchain objects** — like Uniswa
 
 | Network | Factory | Status |
 |---------|---------|--------|
-| Ethereum mainnet | *coming soon* | 🔜 |
-| Base | *coming soon* | 🔜 |
+| Ethereum mainnet | [`0x42dca1984a1faac1ca7f1980a78fcd96782f36e9`](https://etherscan.io/address/0x42dca1984a1faac1ca7f1980a78fcd96782f36e9) | ✅ Live |
+| Base | [`0xe3e462c58c1fe28b6b48208c4f0900d68c9d9785`](https://basescan.org/address/0xe3e462c58c1fe28b6b48208c4f0900d68c9d9785) | ✅ Live |
 
 ---
 
