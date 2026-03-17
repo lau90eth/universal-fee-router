@@ -22,18 +22,17 @@ import "../src/UniversalFeeRouterFactory.sol";
  *   ETHERSCAN_API_KEY — for contract verification
  */
 contract Deploy is Script {
-
     // ── Canonical recipient placeholders ─────────────────────────────────────
     // These are placeholder addresses for canonical router deployment.
     // In production: replace with your actual treasury/frontend/protocol addresses.
 
-    address constant TREASURY   = 0x1e64096D2F12f6d343E84D780104d928441B3228;
-    address constant FRONTEND   = 0x000000000000000000000000000000000000dEaD;
-    address constant PROTOCOL   = 0x000000000000000000000000000000000000bEEF;
+    address constant TREASURY = 0x1e64096D2F12f6d343E84D780104d928441B3228;
+    address constant FRONTEND = 0x000000000000000000000000000000000000dEaD;
+    address constant PROTOCOL = 0x000000000000000000000000000000000000bEEF;
 
     function run() external {
         uint256 deployerKey = vm.envUint("PRIVATE_KEY");
-        address deployer    = vm.addr(deployerKey);
+        address deployer = vm.addr(deployerKey);
 
         console.log("=== Universal Fee Router Deploy ===");
         console.log("Deployer:  ", deployer);
@@ -49,25 +48,22 @@ contract Deploy is Script {
         // ── 2. Deploy canonical routers ───────────────────────────────────
 
         // 50/50
-        UniversalFeeRouter.FeeSplit[] memory s5050 =
-            new UniversalFeeRouter.FeeSplit[](2);
+        UniversalFeeRouter.FeeSplit[] memory s5050 = new UniversalFeeRouter.FeeSplit[](2);
         s5050[0] = UniversalFeeRouter.FeeSplit(TREASURY, 5_000);
         s5050[1] = UniversalFeeRouter.FeeSplit(FRONTEND, 5_000);
         (address r5050,) = factory.deploy(s5050);
         console.log("50/50:     ", r5050);
 
         // 70/20/10
-        UniversalFeeRouter.FeeSplit[] memory s702010 =
-            new UniversalFeeRouter.FeeSplit[](3);
-        s702010[0] = UniversalFeeRouter.FeeSplit(TREASURY,  7_000);
-        s702010[1] = UniversalFeeRouter.FeeSplit(FRONTEND,  2_000);
-        s702010[2] = UniversalFeeRouter.FeeSplit(PROTOCOL,  1_000);
+        UniversalFeeRouter.FeeSplit[] memory s702010 = new UniversalFeeRouter.FeeSplit[](3);
+        s702010[0] = UniversalFeeRouter.FeeSplit(TREASURY, 7_000);
+        s702010[1] = UniversalFeeRouter.FeeSplit(FRONTEND, 2_000);
+        s702010[2] = UniversalFeeRouter.FeeSplit(PROTOCOL, 1_000);
         (address r702010,) = factory.deploy(s702010);
         console.log("70/20/10:  ", r702010);
 
         // 100% treasury
-        UniversalFeeRouter.FeeSplit[] memory s100 =
-            new UniversalFeeRouter.FeeSplit[](1);
+        UniversalFeeRouter.FeeSplit[] memory s100 = new UniversalFeeRouter.FeeSplit[](1);
         s100[0] = UniversalFeeRouter.FeeSplit(TREASURY, 10_000);
         (address r100,) = factory.deploy(s100);
         console.log("100%:      ", r100);

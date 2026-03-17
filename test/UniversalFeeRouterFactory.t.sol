@@ -6,31 +6,26 @@ import "../src/UniversalFeeRouter.sol";
 import "../src/UniversalFeeRouterFactory.sol";
 
 contract UniversalFeeRouterFactoryTest is Test {
-
     UniversalFeeRouterFactory factory;
 
-    address alice   = makeAddr("alice");
-    address bob     = makeAddr("bob");
+    address alice = makeAddr("alice");
+    address bob = makeAddr("bob");
     address charlie = makeAddr("charlie");
 
     function setUp() public {
         factory = new UniversalFeeRouterFactory();
     }
 
-    function _splits2() internal view
-        returns (UniversalFeeRouter.FeeSplit[] memory s)
-    {
+    function _splits2() internal view returns (UniversalFeeRouter.FeeSplit[] memory s) {
         s = new UniversalFeeRouter.FeeSplit[](2);
         s[0] = UniversalFeeRouter.FeeSplit(alice, 5_000);
-        s[1] = UniversalFeeRouter.FeeSplit(bob,   5_000);
+        s[1] = UniversalFeeRouter.FeeSplit(bob, 5_000);
     }
 
-    function _splits3() internal view
-        returns (UniversalFeeRouter.FeeSplit[] memory s)
-    {
+    function _splits3() internal view returns (UniversalFeeRouter.FeeSplit[] memory s) {
         s = new UniversalFeeRouter.FeeSplit[](3);
-        s[0] = UniversalFeeRouter.FeeSplit(alice,   3_000);
-        s[1] = UniversalFeeRouter.FeeSplit(bob,     3_000);
+        s[0] = UniversalFeeRouter.FeeSplit(alice, 3_000);
+        s[1] = UniversalFeeRouter.FeeSplit(bob, 3_000);
         s[2] = UniversalFeeRouter.FeeSplit(charlie, 4_000);
     }
 
@@ -63,7 +58,7 @@ contract UniversalFeeRouterFactoryTest is Test {
 
     function test_deployIdempotent() public {
         UniversalFeeRouter.FeeSplit[] memory s = _splits2();
-        (address first,  bool fresh1) = factory.deploy(s);
+        (address first, bool fresh1) = factory.deploy(s);
         (address second, bool fresh2) = factory.deploy(s);
         assertEq(first, second);
         assertTrue(fresh1);
@@ -92,7 +87,7 @@ contract UniversalFeeRouterFactoryTest is Test {
         router.routeETH{value: 1 ether}();
 
         assertEq(alice.balance, 0.5 ether);
-        assertEq(bob.balance,   0.5 ether);
+        assertEq(bob.balance, 0.5 ether);
     }
 
     // ═══════════════════════════════════════════════════
@@ -138,7 +133,7 @@ contract UniversalFeeRouterFactoryTest is Test {
 
         UniversalFeeRouter.FeeSplit[] memory s = new UniversalFeeRouter.FeeSplit[](2);
         s[0] = UniversalFeeRouter.FeeSplit(alice, bpsA);
-        s[1] = UniversalFeeRouter.FeeSplit(bob,   bpsB);
+        s[1] = UniversalFeeRouter.FeeSplit(bob, bpsB);
 
         address predicted = factory.predict(s);
         (address deployed,) = factory.deploy(s);
@@ -152,10 +147,10 @@ contract UniversalFeeRouterFactoryTest is Test {
     function test_canonicalOrdering_ABequalsBA() public {
         UniversalFeeRouter.FeeSplit[] memory ab = new UniversalFeeRouter.FeeSplit[](2);
         ab[0] = UniversalFeeRouter.FeeSplit(alice, 5_000);
-        ab[1] = UniversalFeeRouter.FeeSplit(bob,   5_000);
+        ab[1] = UniversalFeeRouter.FeeSplit(bob, 5_000);
 
         UniversalFeeRouter.FeeSplit[] memory ba = new UniversalFeeRouter.FeeSplit[](2);
-        ba[0] = UniversalFeeRouter.FeeSplit(bob,   5_000);
+        ba[0] = UniversalFeeRouter.FeeSplit(bob, 5_000);
         ba[1] = UniversalFeeRouter.FeeSplit(alice, 5_000);
 
         // Same salt regardless of input order
@@ -178,19 +173,19 @@ contract UniversalFeeRouterFactoryTest is Test {
     function test_canonicalOrdering_3way() public {
         // All 6 permutations of [alice, bob, charlie] → same address
         UniversalFeeRouter.FeeSplit[] memory s1 = new UniversalFeeRouter.FeeSplit[](3);
-        s1[0] = UniversalFeeRouter.FeeSplit(alice,   3_000);
-        s1[1] = UniversalFeeRouter.FeeSplit(bob,     3_000);
+        s1[0] = UniversalFeeRouter.FeeSplit(alice, 3_000);
+        s1[1] = UniversalFeeRouter.FeeSplit(bob, 3_000);
         s1[2] = UniversalFeeRouter.FeeSplit(charlie, 4_000);
 
         UniversalFeeRouter.FeeSplit[] memory s2 = new UniversalFeeRouter.FeeSplit[](3);
         s2[0] = UniversalFeeRouter.FeeSplit(charlie, 4_000);
-        s2[1] = UniversalFeeRouter.FeeSplit(alice,   3_000);
-        s2[2] = UniversalFeeRouter.FeeSplit(bob,     3_000);
+        s2[1] = UniversalFeeRouter.FeeSplit(alice, 3_000);
+        s2[2] = UniversalFeeRouter.FeeSplit(bob, 3_000);
 
         UniversalFeeRouter.FeeSplit[] memory s3 = new UniversalFeeRouter.FeeSplit[](3);
-        s3[0] = UniversalFeeRouter.FeeSplit(bob,     3_000);
+        s3[0] = UniversalFeeRouter.FeeSplit(bob, 3_000);
         s3[1] = UniversalFeeRouter.FeeSplit(charlie, 4_000);
-        s3[2] = UniversalFeeRouter.FeeSplit(alice,   3_000);
+        s3[2] = UniversalFeeRouter.FeeSplit(alice, 3_000);
 
         bytes32 salt1 = factory.computeSalt(s1);
         bytes32 salt2 = factory.computeSalt(s2);
@@ -211,16 +206,15 @@ contract UniversalFeeRouterFactoryTest is Test {
     function test_samePeople_differentBps_differentAddress() public {
         UniversalFeeRouter.FeeSplit[] memory s6040 = new UniversalFeeRouter.FeeSplit[](2);
         s6040[0] = UniversalFeeRouter.FeeSplit(alice, 6_000);
-        s6040[1] = UniversalFeeRouter.FeeSplit(bob,   4_000);
+        s6040[1] = UniversalFeeRouter.FeeSplit(bob, 4_000);
 
         UniversalFeeRouter.FeeSplit[] memory s5050 = new UniversalFeeRouter.FeeSplit[](2);
         s5050[0] = UniversalFeeRouter.FeeSplit(alice, 5_000);
-        s5050[1] = UniversalFeeRouter.FeeSplit(bob,   5_000);
+        s5050[1] = UniversalFeeRouter.FeeSplit(bob, 5_000);
 
         assertTrue(factory.computeSalt(s6040) != factory.computeSalt(s5050));
         assertTrue(factory.predict(s6040) != factory.predict(s5050));
     }
-
 
     // ═══════════════════════════════════════════════════
     // F9 — Factory-level validation
@@ -238,9 +232,9 @@ contract UniversalFeeRouterFactoryTest is Test {
     function test_factory_revert_duplicateOutOfOrder() public {
         // [B,A,B] — after sort [A,B,B] → duplicate detected
         UniversalFeeRouter.FeeSplit[] memory s = new UniversalFeeRouter.FeeSplit[](3);
-        s[0] = UniversalFeeRouter.FeeSplit(bob,   3_000);
+        s[0] = UniversalFeeRouter.FeeSplit(bob, 3_000);
         s[1] = UniversalFeeRouter.FeeSplit(alice, 3_000);
-        s[2] = UniversalFeeRouter.FeeSplit(bob,   4_000);
+        s[2] = UniversalFeeRouter.FeeSplit(bob, 4_000);
         vm.expectRevert("UFR-F: duplicate recipient");
         factory.deploy(s);
     }
@@ -248,7 +242,7 @@ contract UniversalFeeRouterFactoryTest is Test {
     function test_factory_revert_zeroBps() public {
         UniversalFeeRouter.FeeSplit[] memory s = new UniversalFeeRouter.FeeSplit[](2);
         s[0] = UniversalFeeRouter.FeeSplit(alice, 0);
-        s[1] = UniversalFeeRouter.FeeSplit(bob,   10_000);
+        s[1] = UniversalFeeRouter.FeeSplit(bob, 10_000);
         vm.expectRevert("UFR-F: zero bps");
         factory.deploy(s);
     }
@@ -264,9 +258,8 @@ contract UniversalFeeRouterFactoryTest is Test {
     function test_factory_computeSalt_revert_zeroBps() public {
         UniversalFeeRouter.FeeSplit[] memory s = new UniversalFeeRouter.FeeSplit[](2);
         s[0] = UniversalFeeRouter.FeeSplit(alice, 0);
-        s[1] = UniversalFeeRouter.FeeSplit(bob,   10_000);
+        s[1] = UniversalFeeRouter.FeeSplit(bob, 10_000);
         vm.expectRevert("UFR-F: zero bps");
         factory.computeSalt(s);
     }
-
 }

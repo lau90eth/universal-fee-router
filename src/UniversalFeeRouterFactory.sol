@@ -33,16 +33,12 @@ import "./UniversalFeeRouter.sol";
  *  F4. [A,B] and [B,A] with same bps → same address (canonical ordering)
  */
 contract UniversalFeeRouterFactory {
-
     // ── Events ────────────────────────────────────────────────────────────────
 
     /// @notice Emitted when a new router is deployed.
     /// @param router  The deployed router address.
     /// @param salt    The canonical salt (keccak256 of packed sorted splits).
-    event RouterDeployed(
-        address indexed router,
-        bytes32 indexed salt
-    );
+    event RouterDeployed(address indexed router, bytes32 indexed salt);
 
     // ── State ─────────────────────────────────────────────────────────────────
 
@@ -59,10 +55,7 @@ contract UniversalFeeRouterFactory {
      * @return router The (possibly pre-existing) router address.
      * @return fresh  True if newly deployed, false if already existed.
      */
-    function deploy(UniversalFeeRouter.FeeSplit[] calldata splits)
-        external
-        returns (address router, bool fresh)
-    {
+    function deploy(UniversalFeeRouter.FeeSplit[] calldata splits) external returns (address router, bool fresh) {
         bytes32 salt = _salt(splits);
 
         // Return existing if already deployed (idempotent)
@@ -78,7 +71,7 @@ contract UniversalFeeRouterFactory {
         }
         require(deployed != address(0), "UFR-F: deploy failed");
 
-        routers[salt]  = deployed;
+        routers[salt] = deployed;
         emit RouterDeployed(deployed, salt);
         return (deployed, true);
     }
@@ -90,29 +83,16 @@ contract UniversalFeeRouterFactory {
      * @param splits  The fee split configuration.
      * @return        The address where the router will/would be deployed.
      */
-    function predict(UniversalFeeRouter.FeeSplit[] calldata splits)
-        external
-        view
-        returns (address)
-    {
-        bytes32 salt     = _salt(splits);
+    function predict(UniversalFeeRouter.FeeSplit[] calldata splits) external view returns (address) {
+        bytes32 salt = _salt(splits);
         bytes32 bytecodeHash = keccak256(_bytecode(splits));
-        return address(uint160(uint256(keccak256(abi.encodePacked(
-            bytes1(0xff),
-            address(this),
-            salt,
-            bytecodeHash
-        )))));
+        return address(uint160(uint256(keccak256(abi.encodePacked(bytes1(0xff), address(this), salt, bytecodeHash)))));
     }
 
     /**
      * @notice Check if a splits config has already been deployed.
      */
-    function isDeployed(UniversalFeeRouter.FeeSplit[] calldata splits)
-        external
-        view
-        returns (bool)
-    {
+    function isDeployed(UniversalFeeRouter.FeeSplit[] calldata splits) external view returns (bool) {
         return routers[_salt(splits)] != address(0);
     }
 
@@ -120,11 +100,7 @@ contract UniversalFeeRouterFactory {
      * @notice Compute the deterministic salt for a splits config.
      *         salt = keccak256(abi.encode(splits))
      */
-    function computeSalt(UniversalFeeRouter.FeeSplit[] calldata splits)
-        external
-        pure
-        returns (bytes32)
-    {
+    function computeSalt(UniversalFeeRouter.FeeSplit[] calldata splits) external pure returns (bytes32) {
         return _salt(splits);
     }
 
@@ -141,26 +117,15 @@ contract UniversalFeeRouterFactory {
      *      - No duplicate recipients (checked post-sort: adjacent duplicates)
      *      - No zero bps (fail-fast before hitting router constructor)
      */
-    function _salt(UniversalFeeRouter.FeeSplit[] memory splits)
-        internal
-        pure
-        returns (bytes32)
-    {
+    function _salt(UniversalFeeRouter.FeeSplit[] memory splits) internal pure returns (bytes32) {
         splits = _sort(splits);
         bytes memory packed;
         for (uint256 i; i < splits.length; ++i) {
             // Fail-fast: zero bps
             require(splits[i].bps > 0, "UFR-F: zero bps");
             // Duplicate check post-sort: duplicates are adjacent after sorting
-            require(
-                i == 0 || splits[i].recipient != splits[i-1].recipient,
-                "UFR-F: duplicate recipient"
-            );
-            packed = abi.encodePacked(
-                packed,
-                splits[i].recipient,
-                splits[i].bps
-            );
+            require(i == 0 || splits[i].recipient != splits[i - 1].recipient, "UFR-F: duplicate recipient");
+            packed = abi.encodePacked(packed, splits[i].recipient, splits[i].bps);
         }
         return keccak256(packed);
     }
@@ -176,15 +141,16 @@ contract UniversalFeeRouterFactory {
         returns (UniversalFeeRouter.FeeSplit[] memory)
     {
         uint256 n = splits.length;
-        UniversalFeeRouter.FeeSplit[] memory s =
-            new UniversalFeeRouter.FeeSplit[](n);
-        for (uint256 i; i < n; ++i) s[i] = splits[i];
+        UniversalFeeRouter.FeeSplit[] memory s = new UniversalFeeRouter.FeeSplit[](n);
+        for (uint256 i; i < n; ++i) {
+            s[i] = splits[i];
+        }
 
         for (uint256 i = 1; i < n; ++i) {
             UniversalFeeRouter.FeeSplit memory key = s[i];
             uint256 j = i;
-            while (j > 0 && s[j-1].recipient > key.recipient) {
-                s[j] = s[j-1];
+            while (j > 0 && s[j - 1].recipient > key.recipient) {
+                s[j] = s[j - 1];
                 j--;
             }
             s[j] = key;
@@ -192,15 +158,8 @@ contract UniversalFeeRouterFactory {
         return s;
     }
 
-    function _bytecode(UniversalFeeRouter.FeeSplit[] memory splits)
-        internal
-        pure
-        returns (bytes memory)
-    {
+    function _bytecode(UniversalFeeRouter.FeeSplit[] memory splits) internal pure returns (bytes memory) {
         // Pass splits sorted so the deployed router matches the canonical config
-        return abi.encodePacked(
-            type(UniversalFeeRouter).creationCode,
-            abi.encode(_sort(splits))
-        );
+        return abi.encodePacked(type(UniversalFeeRouter).creationCode, abi.encode(_sort(splits)));
     }
 }

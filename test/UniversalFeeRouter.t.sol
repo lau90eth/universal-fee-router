@@ -7,17 +7,17 @@ import "../src/UniversalFeeRouter.sol";
 // ─── Mock contracts ───────────────────────────────────────────────────────────
 
 contract MockERC20 {
-    string  public name     = "Mock";
-    string  public symbol   = "MCK";
-    uint8   public decimals = 18;
+    string public name = "Mock";
+    string public symbol = "MCK";
+    uint8 public decimals = 18;
     uint256 public totalSupply;
 
-    mapping(address => uint256)                     public balanceOf;
+    mapping(address => uint256) public balanceOf;
     mapping(address => mapping(address => uint256)) public allowance;
 
     function mint(address to, uint256 amount) external {
         balanceOf[to] += amount;
-        totalSupply   += amount;
+        totalSupply += amount;
     }
 
     function approve(address spender, uint256 amount) external returns (bool) {
@@ -28,41 +28,44 @@ contract MockERC20 {
     function transfer(address to, uint256 amount) external virtual returns (bool) {
         require(balanceOf[msg.sender] >= amount, "insufficient");
         balanceOf[msg.sender] -= amount;
-        balanceOf[to]         += amount;
+        balanceOf[to] += amount;
         return true;
     }
 
     function transferFrom(address from, address to, uint256 amount) external virtual returns (bool) {
-        require(balanceOf[from]             >= amount, "insufficient");
+        require(balanceOf[from] >= amount, "insufficient");
         require(allowance[from][msg.sender] >= amount, "not allowed");
         allowance[from][msg.sender] -= amount;
-        balanceOf[from]             -= amount;
-        balanceOf[to]               += amount;
+        balanceOf[from] -= amount;
+        balanceOf[to] += amount;
         return true;
     }
 }
 
 /// @dev Burns 3% on every transferFrom (fee-on-transfer)
 contract FeeOnTransferToken is MockERC20 {
-    function transferFrom(address from, address to, uint256 amount)
-        public override returns (bool)
-    {
-        uint256 fee      = (amount * 3) / 100;
+    function transferFrom(address from, address to, uint256 amount) public override returns (bool) {
+        uint256 fee = (amount * 3) / 100;
         uint256 received = amount - fee;
-        require(balanceOf[from]             >= amount, "insufficient");
+        require(balanceOf[from] >= amount, "insufficient");
         require(allowance[from][msg.sender] >= amount, "not allowed");
         allowance[from][msg.sender] -= amount;
-        balanceOf[from]             -= amount;
-        balanceOf[to]               += received;
-        totalSupply                 -= fee;
+        balanceOf[from] -= amount;
+        balanceOf[to] += received;
+        totalSupply -= fee;
         return true;
     }
 }
 
 /// @dev Always reverts on ETH receive
 contract RevertingRecipient {
-    receive()  external payable { revert("no ETH"); }
-    fallback() external payable { revert("no ETH"); }
+    receive() external payable {
+        revert("no ETH");
+    }
+
+    fallback() external payable {
+        revert("no ETH");
+    }
 }
 
 /// @dev Reverts on ERC-20 transfer via a token that blacklists it
@@ -79,24 +82,22 @@ contract BlacklistToken is MockERC20 {
         blacklisted[addr] = false;
     }
 
-    function transfer(address to, uint256 amount) external override virtual returns (bool) {
+    function transfer(address to, uint256 amount) external virtual override returns (bool) {
         require(!blacklisted[to], "blacklisted");
         require(balanceOf[msg.sender] >= amount, "insufficient");
         balanceOf[msg.sender] -= amount;
-        balanceOf[to]         += amount;
+        balanceOf[to] += amount;
         return true;
     }
 }
 
 /// @dev Returns true on transferFrom but never credits recipient (broken token)
 contract SilentFailToken is MockERC20 {
-    function transferFrom(address from, address to, uint256 amount)
-        public override virtual returns (bool)
-    {
-        require(balanceOf[from]             >= amount, "insufficient");
+    function transferFrom(address from, address to, uint256 amount) public virtual override returns (bool) {
+        require(balanceOf[from] >= amount, "insufficient");
         require(allowance[from][msg.sender] >= amount, "not allowed");
         allowance[from][msg.sender] -= amount;
-        balanceOf[from]             -= amount;
+        balanceOf[from] -= amount;
         // Intentionally does NOT credit `to` — silent failure
         return true;
     }
@@ -104,14 +105,12 @@ contract SilentFailToken is MockERC20 {
 
 /// @dev 100% fee on transfer — recipient receives nothing
 contract TotalFeeToken is MockERC20 {
-    function transferFrom(address from, address to, uint256 amount)
-        public override virtual returns (bool)
-    {
-        require(balanceOf[from]             >= amount, "insufficient");
+    function transferFrom(address from, address to, uint256 amount) public virtual override returns (bool) {
+        require(balanceOf[from] >= amount, "insufficient");
         require(allowance[from][msg.sender] >= amount, "not allowed");
         allowance[from][msg.sender] -= amount;
-        balanceOf[from]             -= amount;
-        totalSupply                 -= amount; // 100% burned
+        balanceOf[from] -= amount;
+        totalSupply -= amount; // 100% burned
         return true;
     }
 }
@@ -119,20 +118,20 @@ contract TotalFeeToken is MockERC20 {
 /// @dev ERC777-style: calls back into router during transfer
 contract ReentrantERC20 is BlacklistToken {
     UniversalFeeRouter public router;
-    bool               private _reentering;
+    bool private _reentering;
 
-    function setRouter(UniversalFeeRouter r) external { router = r; }
+    function setRouter(UniversalFeeRouter r) external {
+        router = r;
+    }
 
     function triggerClaim(UniversalFeeRouter r, address token) external {
         r.claim(token);
     }
 
-    function transfer(address to, uint256 amount)
-        external override virtual returns (bool)
-    {
+    function transfer(address to, uint256 amount) external virtual override returns (bool) {
         require(balanceOf[msg.sender] >= amount, "insufficient");
         balanceOf[msg.sender] -= amount;
-        balanceOf[to]         += amount;
+        balanceOf[to] += amount;
 
         // Attempt reentrant claim during transfer callback
         if (!_reentering && address(router) != address(0)) {
@@ -148,16 +147,22 @@ contract ReentrantERC20 is BlacklistToken {
 contract GasGriefingRecipient {
     receive() external payable {
         uint256 x;
-        while (gasleft() > 500) { unchecked { x++; } }
+        while (gasleft() > 500) {
+            unchecked {
+                x++;
+            }
+        }
     }
 }
 
 /// @dev Attempts reentrancy on ETH receive
 contract ReentrancyAttacker {
     UniversalFeeRouter public router;
-    uint256            public attempts;
+    uint256 public attempts;
 
-    constructor(UniversalFeeRouter _router) { router = _router; }
+    constructor(UniversalFeeRouter _router) {
+        router = _router;
+    }
 
     receive() external payable {
         attempts++;
@@ -172,7 +177,7 @@ contract NoBoolToken is MockERC20 {
     function transfer(address to, uint256 amount) external override returns (bool) {
         require(balanceOf[msg.sender] >= amount, "insufficient");
         balanceOf[msg.sender] -= amount;
-        balanceOf[to]         += amount;
+        balanceOf[to] += amount;
         // deliberately returns true (just testing the ABI path)
         return true;
     }
@@ -182,30 +187,29 @@ contract NoBoolToken is MockERC20 {
 // ─── Test suite ───────────────────────────────────────────────────────────────
 
 contract UniversalFeeRouterTest is Test {
-
     UniversalFeeRouter router2; // alice 50% / bob 50%
     UniversalFeeRouter router3; // alice 30% / bob 30% / charlie 40%
 
-    MockERC20          token;
+    MockERC20 token;
     FeeOnTransferToken fotToken;
 
-    address alice   = makeAddr("alice");
-    address bob     = makeAddr("bob");
+    address alice = makeAddr("alice");
+    address bob = makeAddr("bob");
     address charlie = makeAddr("charlie");
 
     function setUp() public {
         UniversalFeeRouter.FeeSplit[] memory s2 = new UniversalFeeRouter.FeeSplit[](2);
         s2[0] = UniversalFeeRouter.FeeSplit(alice, 5_000);
-        s2[1] = UniversalFeeRouter.FeeSplit(bob,   5_000);
+        s2[1] = UniversalFeeRouter.FeeSplit(bob, 5_000);
         router2 = new UniversalFeeRouter(s2);
 
         UniversalFeeRouter.FeeSplit[] memory s3 = new UniversalFeeRouter.FeeSplit[](3);
-        s3[0] = UniversalFeeRouter.FeeSplit(alice,   3_000);
-        s3[1] = UniversalFeeRouter.FeeSplit(bob,     3_000);
+        s3[0] = UniversalFeeRouter.FeeSplit(alice, 3_000);
+        s3[1] = UniversalFeeRouter.FeeSplit(bob, 3_000);
         s3[2] = UniversalFeeRouter.FeeSplit(charlie, 4_000);
         router3 = new UniversalFeeRouter(s3);
 
-        token    = new MockERC20();
+        token = new MockERC20();
         fotToken = new FeeOnTransferToken();
     }
 
@@ -227,7 +231,7 @@ contract UniversalFeeRouterTest is Test {
     function test_constructor_revert_bpsMismatch() public {
         UniversalFeeRouter.FeeSplit[] memory s = new UniversalFeeRouter.FeeSplit[](2);
         s[0] = UniversalFeeRouter.FeeSplit(alice, 4_000);
-        s[1] = UniversalFeeRouter.FeeSplit(bob,   4_000);
+        s[1] = UniversalFeeRouter.FeeSplit(bob, 4_000);
         vm.expectRevert("UFR: bps != 10000");
         new UniversalFeeRouter(s);
     }
@@ -235,7 +239,7 @@ contract UniversalFeeRouterTest is Test {
     function test_constructor_revert_zeroAddress() public {
         UniversalFeeRouter.FeeSplit[] memory s = new UniversalFeeRouter.FeeSplit[](2);
         s[0] = UniversalFeeRouter.FeeSplit(address(0), 5_000);
-        s[1] = UniversalFeeRouter.FeeSplit(bob,        5_000);
+        s[1] = UniversalFeeRouter.FeeSplit(bob, 5_000);
         vm.expectRevert("UFR: zero recipient");
         new UniversalFeeRouter(s);
     }
@@ -251,7 +255,7 @@ contract UniversalFeeRouterTest is Test {
     function test_constructor_revert_zeroBps() public {
         UniversalFeeRouter.FeeSplit[] memory s = new UniversalFeeRouter.FeeSplit[](2);
         s[0] = UniversalFeeRouter.FeeSplit(alice, 0);
-        s[1] = UniversalFeeRouter.FeeSplit(bob,   10_000);
+        s[1] = UniversalFeeRouter.FeeSplit(bob, 10_000);
         vm.expectRevert("UFR: zero bps");
         new UniversalFeeRouter(s);
     }
@@ -264,15 +268,15 @@ contract UniversalFeeRouterTest is Test {
         vm.deal(address(this), 1 ether);
         router2.routeETH{value: 1 ether}();
         assertEq(alice.balance, 0.5 ether);
-        assertEq(bob.balance,   0.5 ether);
+        assertEq(bob.balance, 0.5 ether);
         assertEq(address(router2).balance, 0);
     }
 
     function test_routeETH_3way() public {
         vm.deal(address(this), 1 ether);
         router3.routeETH{value: 1 ether}();
-        assertEq(alice.balance,   0.3 ether);
-        assertEq(bob.balance,     0.3 ether);
+        assertEq(alice.balance, 0.3 ether);
+        assertEq(bob.balance, 0.3 ether);
         assertEq(charlie.balance, 0.4 ether);
         assertEq(address(router3).balance, 0);
     }
@@ -282,15 +286,15 @@ contract UniversalFeeRouterTest is Test {
         vm.deal(address(this), 1);
         router2.routeETH{value: 1}();
         assertEq(alice.balance, 0);
-        assertEq(bob.balance,   1);
+        assertEq(bob.balance, 1);
     }
 
     function test_routeETH_via_receive() public {
         vm.deal(address(this), 1 ether);
-        (bool ok, ) = address(router2).call{value: 1 ether}("");
+        (bool ok,) = address(router2).call{value: 1 ether}("");
         assertTrue(ok);
         assertEq(alice.balance, 0.5 ether);
-        assertEq(bob.balance,   0.5 ether);
+        assertEq(bob.balance, 0.5 ether);
     }
 
     function test_routeETH_revert_zero() public {
@@ -306,7 +310,7 @@ contract UniversalFeeRouterTest is Test {
         RevertingRecipient rev = new RevertingRecipient();
         UniversalFeeRouter.FeeSplit[] memory s = new UniversalFeeRouter.FeeSplit[](2);
         s[0] = UniversalFeeRouter.FeeSplit(address(rev), 5_000);
-        s[1] = UniversalFeeRouter.FeeSplit(bob,          5_000);
+        s[1] = UniversalFeeRouter.FeeSplit(bob, 5_000);
         UniversalFeeRouter r = new UniversalFeeRouter(s);
 
         vm.deal(address(this), 1 ether);
@@ -328,7 +332,7 @@ contract UniversalFeeRouterTest is Test {
         GasGriefingRecipient greedy = new GasGriefingRecipient();
         UniversalFeeRouter.FeeSplit[] memory s = new UniversalFeeRouter.FeeSplit[](2);
         s[0] = UniversalFeeRouter.FeeSplit(address(greedy), 5_000);
-        s[1] = UniversalFeeRouter.FeeSplit(bob,             5_000);
+        s[1] = UniversalFeeRouter.FeeSplit(bob, 5_000);
         UniversalFeeRouter r = new UniversalFeeRouter(s);
 
         vm.deal(address(this), 1 ether);
@@ -337,7 +341,7 @@ contract UniversalFeeRouterTest is Test {
         // Key invariant: bob always receives his share regardless of greedy
         assertEq(bob.balance, 0.5 ether);
         // Total accounted for = greedy (pushed or credited) + bob
-        uint256 greedyPushed  = address(greedy).balance;
+        uint256 greedyPushed = address(greedy).balance;
         uint256 greedyCredited = r.claimable(address(greedy), r.ETH_ADDRESS());
         assertEq(greedyPushed + greedyCredited, 0.5 ether);
         // Router holds only what is credited
@@ -353,7 +357,7 @@ contract UniversalFeeRouterTest is Test {
         token.approve(address(router2), 1000e18);
         router2.routeERC20(address(token), 1000e18);
         assertEq(token.balanceOf(alice), 500e18);
-        assertEq(token.balanceOf(bob),   500e18);
+        assertEq(token.balanceOf(bob), 500e18);
         assertEq(token.balanceOf(address(router2)), 0);
     }
 
@@ -379,10 +383,7 @@ contract UniversalFeeRouterTest is Test {
         router3.routeERC20(address(token), 999e18);
         // No dust left in contract
         assertEq(token.balanceOf(address(router3)), 0);
-        assertEq(
-            token.balanceOf(alice) + token.balanceOf(bob) + token.balanceOf(charlie),
-            999e18
-        );
+        assertEq(token.balanceOf(alice) + token.balanceOf(bob) + token.balanceOf(charlie), 999e18);
     }
 
     // ═══════════════════════════════════════════════════
@@ -407,7 +408,7 @@ contract UniversalFeeRouterTest is Test {
         ReentrancyAttacker attacker = new ReentrancyAttacker(router2);
         UniversalFeeRouter.FeeSplit[] memory s = new UniversalFeeRouter.FeeSplit[](2);
         s[0] = UniversalFeeRouter.FeeSplit(address(attacker), 5_000);
-        s[1] = UniversalFeeRouter.FeeSplit(bob,               5_000);
+        s[1] = UniversalFeeRouter.FeeSplit(bob, 5_000);
         UniversalFeeRouter r = new UniversalFeeRouter(s);
 
         // Force a credit so attacker has something to claim
@@ -434,13 +435,13 @@ contract UniversalFeeRouterTest is Test {
 
     function test_claimMultiple_erc20() public {
         MockERC20 tokenB = new MockERC20();
-        token.mint(address(this),  1000e18);
+        token.mint(address(this), 1000e18);
         tokenB.mint(address(this), 1000e18);
-        token.approve(address(router2),  1000e18);
+        token.approve(address(router2), 1000e18);
         tokenB.approve(address(router2), 1000e18);
-        router2.routeERC20(address(token),  1000e18);
+        router2.routeERC20(address(token), 1000e18);
         router2.routeERC20(address(tokenB), 1000e18);
-        assertEq(token.balanceOf(alice),  500e18);
+        assertEq(token.balanceOf(alice), 500e18);
         assertEq(tokenB.balanceOf(alice), 500e18);
     }
 
@@ -479,10 +480,7 @@ contract UniversalFeeRouterTest is Test {
         token.approve(address(router2), amount);
         router2.routeERC20(address(token), amount);
         assertEq(token.balanceOf(address(router2)), 0);
-        assertEq(
-            token.balanceOf(alice) + token.balanceOf(bob),
-            uint256(amount)
-        );
+        assertEq(token.balanceOf(alice) + token.balanceOf(bob), uint256(amount));
     }
 
     function testFuzz_constructor_validSplits(uint16 a, uint16 b) public {
@@ -514,7 +512,7 @@ contract UniversalFeeRouterTest is Test {
         t.approve(address(router2), 1000e18);
         router2.routeERC20(address(t), 1000e18);
         assertEq(t.balanceOf(alice), 500e18);
-        assertEq(t.balanceOf(bob),   500e18);
+        assertEq(t.balanceOf(bob), 500e18);
         assertEq(t.balanceOf(address(router2)), 0);
     }
 
@@ -530,7 +528,7 @@ contract UniversalFeeRouterTest is Test {
 
         UniversalFeeRouter.FeeSplit[] memory s = new UniversalFeeRouter.FeeSplit[](2);
         s[0] = UniversalFeeRouter.FeeSplit(alice, 5_000);
-        s[1] = UniversalFeeRouter.FeeSplit(bob,   5_000);
+        s[1] = UniversalFeeRouter.FeeSplit(bob, 5_000);
         UniversalFeeRouter r = new UniversalFeeRouter(s);
 
         bt.approve(address(r), 1000e18);
@@ -564,14 +562,14 @@ contract UniversalFeeRouterTest is Test {
         ReentrancyAttacker attacker = new ReentrancyAttacker(router2);
         UniversalFeeRouter.FeeSplit[] memory s = new UniversalFeeRouter.FeeSplit[](2);
         s[0] = UniversalFeeRouter.FeeSplit(address(attacker), 5_000);
-        s[1] = UniversalFeeRouter.FeeSplit(bob,               5_000);
+        s[1] = UniversalFeeRouter.FeeSplit(bob, 5_000);
         UniversalFeeRouter r = new UniversalFeeRouter(s);
 
         vm.deal(address(this), 2 ether);
         r.routeETH{value: 2 ether}();
 
         // Total received by attacker (pushed + credited) must equal exactly 1 ether
-        uint256 pushed   = address(attacker).balance;
+        uint256 pushed = address(attacker).balance;
         uint256 credited = r.claimable(address(attacker), r.ETH_ADDRESS());
         assertEq(pushed + credited, 1 ether, "attacker received more than entitled");
 
@@ -610,13 +608,13 @@ contract UniversalFeeRouterTest is Test {
     // ═══════════════════════════════════════════════════
 
     function test_mixed_pushOk_revert_gasGrief() public {
-        RevertingRecipient  rev    = new RevertingRecipient();
+        RevertingRecipient rev = new RevertingRecipient();
         GasGriefingRecipient greedy = new GasGriefingRecipient();
 
         UniversalFeeRouter.FeeSplit[] memory s = new UniversalFeeRouter.FeeSplit[](3);
-        s[0] = UniversalFeeRouter.FeeSplit(alice,          4_000); // normal EOA
-        s[1] = UniversalFeeRouter.FeeSplit(address(rev),   3_000); // always reverts
-        s[2] = UniversalFeeRouter.FeeSplit(address(greedy),3_000); // burns gas
+        s[0] = UniversalFeeRouter.FeeSplit(alice, 4_000); // normal EOA
+        s[1] = UniversalFeeRouter.FeeSplit(address(rev), 3_000); // always reverts
+        s[2] = UniversalFeeRouter.FeeSplit(address(greedy), 3_000); // burns gas
         UniversalFeeRouter r = new UniversalFeeRouter(s);
 
         vm.deal(address(this), 1 ether);
@@ -629,13 +627,12 @@ contract UniversalFeeRouterTest is Test {
         assertEq(r.claimable(address(rev), r.ETH_ADDRESS()), 0.3 ether);
 
         // greedy: push fails or succeeds — total must be 0.3 ether
-        uint256 greedyTotal = address(greedy).balance +
-                              r.claimable(address(greedy), r.ETH_ADDRESS());
+        uint256 greedyTotal = address(greedy).balance + r.claimable(address(greedy), r.ETH_ADDRESS());
         assertEq(greedyTotal, 0.3 ether);
 
         // Router holds exactly what is credited
-        uint256 totalCredited = r.claimable(address(rev),    r.ETH_ADDRESS()) +
-                                r.claimable(address(greedy), r.ETH_ADDRESS());
+        uint256 totalCredited =
+            r.claimable(address(rev), r.ETH_ADDRESS()) + r.claimable(address(greedy), r.ETH_ADDRESS());
         assertEq(address(r).balance, totalCredited);
     }
 
@@ -646,8 +643,8 @@ contract UniversalFeeRouterTest is Test {
     function test_extremeDust_3wei() public {
         // 3 wei split 33/33/34 bps-equivalent
         UniversalFeeRouter.FeeSplit[] memory s = new UniversalFeeRouter.FeeSplit[](3);
-        s[0] = UniversalFeeRouter.FeeSplit(alice,   3_333);
-        s[1] = UniversalFeeRouter.FeeSplit(bob,     3_333);
+        s[0] = UniversalFeeRouter.FeeSplit(alice, 3_333);
+        s[1] = UniversalFeeRouter.FeeSplit(bob, 3_333);
         s[2] = UniversalFeeRouter.FeeSplit(charlie, 3_334);
         UniversalFeeRouter r = new UniversalFeeRouter(s);
 
@@ -672,7 +669,7 @@ contract UniversalFeeRouterTest is Test {
         UniversalFeeRouter innerRouter = new UniversalFeeRouter(s2);
 
         s[0] = UniversalFeeRouter.FeeSplit(address(innerRouter), 5_000);
-        s[1] = UniversalFeeRouter.FeeSplit(bob,                  5_000);
+        s[1] = UniversalFeeRouter.FeeSplit(bob, 5_000);
         UniversalFeeRouter outerRouter = new UniversalFeeRouter(s);
 
         vm.deal(address(this), 1 ether);
@@ -683,7 +680,7 @@ contract UniversalFeeRouterTest is Test {
         assertEq(bob.balance, 0.5 ether);
 
         // Total accounted for
-        uint256 innerBalance  = address(innerRouter).balance;
+        uint256 innerBalance = address(innerRouter).balance;
         uint256 innerCredited = outerRouter.claimable(address(innerRouter), outerRouter.ETH_ADDRESS());
         assertEq(innerBalance + innerCredited, 0.5 ether);
     }
@@ -700,7 +697,7 @@ contract UniversalFeeRouterTest is Test {
 
         UniversalFeeRouter.FeeSplit[] memory s = new UniversalFeeRouter.FeeSplit[](2);
         s[0] = UniversalFeeRouter.FeeSplit(alice, 6_000);
-        s[1] = UniversalFeeRouter.FeeSplit(bob,   4_000);
+        s[1] = UniversalFeeRouter.FeeSplit(bob, 4_000);
         UniversalFeeRouter r = new UniversalFeeRouter(s);
 
         bt.approve(address(r), 1000e18);
@@ -732,7 +729,7 @@ contract UniversalFeeRouterTest is Test {
 
         // No money created: recipients have nothing
         assertEq(sft.balanceOf(alice), 0);
-        assertEq(sft.balanceOf(bob),   0);
+        assertEq(sft.balanceOf(bob), 0);
     }
 
     // ═══════════════════════════════════════════════════
@@ -747,7 +744,7 @@ contract UniversalFeeRouterTest is Test {
 
         UniversalFeeRouter.FeeSplit[] memory s = new UniversalFeeRouter.FeeSplit[](2);
         s[0] = UniversalFeeRouter.FeeSplit(alice, 5_000);
-        s[1] = UniversalFeeRouter.FeeSplit(bob,   5_000);
+        s[1] = UniversalFeeRouter.FeeSplit(bob, 5_000);
         UniversalFeeRouter r = new UniversalFeeRouter(s);
 
         bt.approve(address(r), 1000e18);
@@ -797,10 +794,9 @@ contract UniversalFeeRouterTest is Test {
 
         // State untouched
         assertEq(tft.balanceOf(alice), 0);
-        assertEq(tft.balanceOf(bob),   0);
+        assertEq(tft.balanceOf(bob), 0);
         assertEq(tft.balanceOf(address(router2)), 0);
     }
-
 
     // ═══════════════════════════════════════════════════
     // SECTION 22 — Conservation invariant (global)
@@ -816,18 +812,15 @@ contract UniversalFeeRouterTest is Test {
 
         router3.routeETH{value: amount}();
 
-        uint256 totalAfter = alice.balance
-            + bob.balance
-            + charlie.balance
-            + router3.claimable(alice,   router3.ETH_ADDRESS())
-            + router3.claimable(bob,     router3.ETH_ADDRESS())
+        uint256 totalAfter = alice.balance + bob.balance + charlie.balance
+            + router3.claimable(alice, router3.ETH_ADDRESS()) + router3.claimable(bob, router3.ETH_ADDRESS())
             + router3.claimable(charlie, router3.ETH_ADDRESS());
 
         assertEq(totalAfter - totalBefore, uint256(amount));
-        assertEq(address(router3).balance,
-            router3.claimable(alice,   router3.ETH_ADDRESS()) +
-            router3.claimable(bob,     router3.ETH_ADDRESS()) +
-            router3.claimable(charlie, router3.ETH_ADDRESS())
+        assertEq(
+            address(router3).balance,
+            router3.claimable(alice, router3.ETH_ADDRESS()) + router3.claimable(bob, router3.ETH_ADDRESS())
+                + router3.claimable(charlie, router3.ETH_ADDRESS())
         );
     }
 
@@ -836,24 +829,19 @@ contract UniversalFeeRouterTest is Test {
         token.mint(address(this), amount);
         token.approve(address(router3), amount);
 
-        uint256 totalBefore = token.balanceOf(alice)
-            + token.balanceOf(bob)
-            + token.balanceOf(charlie);
+        uint256 totalBefore = token.balanceOf(alice) + token.balanceOf(bob) + token.balanceOf(charlie);
 
         router3.routeERC20(address(token), amount);
 
-        uint256 totalAfter = token.balanceOf(alice)
-            + token.balanceOf(bob)
-            + token.balanceOf(charlie)
-            + router3.claimable(alice,   address(token))
-            + router3.claimable(bob,     address(token))
+        uint256 totalAfter = token.balanceOf(alice) + token.balanceOf(bob) + token.balanceOf(charlie)
+            + router3.claimable(alice, address(token)) + router3.claimable(bob, address(token))
             + router3.claimable(charlie, address(token));
 
         assertEq(totalAfter - totalBefore, uint256(amount));
-        assertEq(token.balanceOf(address(router3)),
-            router3.claimable(alice,   address(token)) +
-            router3.claimable(bob,     address(token)) +
-            router3.claimable(charlie, address(token))
+        assertEq(
+            token.balanceOf(address(router3)),
+            router3.claimable(alice, address(token)) + router3.claimable(bob, address(token))
+                + router3.claimable(charlie, address(token))
         );
     }
 
@@ -862,29 +850,23 @@ contract UniversalFeeRouterTest is Test {
         fotToken.mint(address(this), amount);
         fotToken.approve(address(router3), amount);
 
-        uint256 before = fotToken.balanceOf(alice)
-            + fotToken.balanceOf(bob)
-            + fotToken.balanceOf(charlie);
+        uint256 before = fotToken.balanceOf(alice) + fotToken.balanceOf(bob) + fotToken.balanceOf(charlie);
 
         router3.routeERC20(address(fotToken), amount);
 
         // received = amount - 3% fee (burned by token)
         uint256 received = amount - (uint256(amount) * 3 / 100);
 
-        uint256 afterDist = fotToken.balanceOf(alice)
-            + fotToken.balanceOf(bob)
-            + fotToken.balanceOf(charlie)
-            + router3.claimable(alice,   address(fotToken))
-            + router3.claimable(bob,     address(fotToken))
+        uint256 afterDist = fotToken.balanceOf(alice) + fotToken.balanceOf(bob) + fotToken.balanceOf(charlie)
+            + router3.claimable(alice, address(fotToken)) + router3.claimable(bob, address(fotToken))
             + router3.claimable(charlie, address(fotToken));
 
         // Conservation: out == what was actually received (not original amount)
         assertEq(afterDist - before, received);
-        assertEq(fotToken.balanceOf(address(router3)),
-            router3.claimable(alice,   address(fotToken)) +
-            router3.claimable(bob,     address(fotToken)) +
-            router3.claimable(charlie, address(fotToken))
+        assertEq(
+            fotToken.balanceOf(address(router3)),
+            router3.claimable(alice, address(fotToken)) + router3.claimable(bob, address(fotToken))
+                + router3.claimable(charlie, address(fotToken))
         );
     }
-
 }
