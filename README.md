@@ -82,6 +82,8 @@ This transforms fee configs into **addressable onchain objects** — like Uniswa
 |---------|---------|--------|
 | Ethereum mainnet | [`0x42dca1984a1faac1ca7f1980a78fcd96782f36e9`](https://etherscan.io/address/0x42dca1984a1faac1ca7f1980a78fcd96782f36e9) | ✅ Live |
 | Base | [`0xe3e462c58c1fe28b6b48208c4f0900d68c9d9785`](https://basescan.org/address/0xe3e462c58c1fe28b6b48208c4f0900d68c9d9785) | ✅ Live |
+| Optimism | [`0x0b262cb79ebe8ff6602e41cf286280485407b360`](https://optimistic.etherscan.io/address/0x0b262cb79ebe8ff6602e41cf286280485407b360) | ✅ Live |
+| Arbitrum One | [`0xe3e462c58c1fe28b6b48208c4f0900d68c9d9785`](https://arbiscan.io/address/0xe3e462c58c1fe28b6b48208c4f0900d68c9d9785) | ✅ Live |
 
 ---
 
