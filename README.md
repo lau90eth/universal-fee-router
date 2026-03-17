@@ -3,6 +3,8 @@
 > **Onchain revenue sharing primitive.**
 > Immutable · Trustless · Zero-fee · EVM-native
 
+Earn up to 70% of swap fees instantly — no contracts, no infra, no trust.
+
 [![Tests](https://github.com/lau90eth/universal-fee-router/actions/workflows/test.yml/badge.svg)](https://github.com/lau90eth/universal-fee-router/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
